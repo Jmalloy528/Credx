@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CredX Command Center — Dispute Manager</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+:root {
+  --bg:#0a0e1a; --surface:#111827; --card:#1a2234; --card2:#1e293b;
+  --border:rgba(148,163,184,0.12); --border-h:rgba(34,211,238,0.4);
+  --text:#e2e8f0; --muted:#94a3b8; --dim:#64748b;
+  --cyan:#22d3ee; --gold:#f5a623; --green:#10b981; --red:#ef4444;
+  --orange:#f97316; --purple:#a78bfa; --blue:#3b82f6;
+  --grad:linear-gradient(135deg,#22d3ee,#0ea5e9);
+  --grad-gold:linear-gradient(135deg,#f5a623,#d4941e);
+  --r:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+h1,h2,h3{font-family:'Playfair Display',serif}
+
+/* ── LAYOUT ── */
+.shell{display:flex;min-height:100vh}
+.side{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;z-index:100;transition:transform .3s}
+.side-brand{padding:1rem .8rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem}
+.sb-icon{width:32px;height:32px;border-radius:8px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#fff}
+.sb-name{font-family:'Playfair Display',serif;font-size:1rem;color:var(--cyan)}
+.sb-sub{font-size:.52rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.side-nav{flex:1;overflow-y:auto;padding:.5rem 0}
+.sn-label{padding:.3rem .8rem;font-size:.55rem;color:var(--dim);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;margin-top:.4rem}
+.sn-item{display:flex;align-items:center;gap:.5rem;padding:.45rem .8rem;color:var(--muted);cursor:pointer;font-size:.75rem;border-left:3px solid transparent;transition:all .15s}
+.sn-item:hover{color:var(--text);background:rgba(34,211,238,.04)}
+.sn-item.act{color:var(--cyan);background:rgba(34,211,238,.08);border-left-color:var(--cyan)}
+.sn-item svg{width:15px;height:15px;flex-shrink:0}
+.sn-badge{margin-left:auto;background:var(--red);color:#fff;font-size:.5rem;padding:1px 5px;border-radius:6px;font-weight:600}
+.side-foot{padding:.6rem .8rem;border-top:1px solid var(--border)}
+.sf-card{display:flex;align-items:center;gap:.4rem}
+.sf-av{width:28px;height:28px;border-radius:50%;background:var(--grad-gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.6rem;color:#fff}
+.sf-name{font-size:.7rem}.sf-role{font-size:.52rem;color:var(--muted)}
+
+.main{margin-left:220px;flex:1;min-height:100vh}
+
+/* ── TOP BAR ── */
+.top{position:sticky;top:0;z-index:50;padding:.5rem 1.2rem;background:rgba(10,14,26,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.top-left{display:flex;align-items:center;gap:.6rem}
+.mob-tog{display:none;background:none;border:none;color:var(--text);cursor:pointer;font-size:1.1rem}
+.top-title{font-size:.95rem;font-weight:600}
+.top-right{display:flex;align-items:center;gap:.5rem}
+.tbtn{background:var(--card);border:1px solid var(--border);color:var(--text);padding:.3rem .7rem;border-radius:8px;font-size:.7rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.tbtn:hover{border-color:var(--cyan);color:var(--cyan)}
+.tbtn.pr{background:var(--grad);border:none;color:#fff;font-weight:600}
+
+.content{padding:1.2rem}
+
+/* ── PAGES ── */
+.pg{display:none;animation:fi .25s ease}.pg.act{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── CLIENT HEADER (CDM style) ── */
+.client-hdr{background:linear-gradient(135deg,rgba(34,211,238,.06),rgba(245,166,35,.04));border:1px solid var(--border);border-radius:var(--r);padding:.8rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between}
+.ch-name{font-size:1rem;font-weight:700;font-family:'Playfair Display',serif}
+.ch-email{font-size:.7rem;color:var(--muted);margin-top:.15rem}
+.ch-select{background:var(--card);border:1px solid var(--border);color:var(--text);padding:.35rem .6rem;border-radius:8px;font-size:.72rem;font-family:'DM Sans',sans-serif;min-width:260px}
+
+/* ── CDM TAB BAR ── */
+.tab-bar{display:flex;border-bottom:2px solid var(--border);margin-bottom:1rem;overflow-x:auto;gap:0}
+.tab-bar .tb{padding:.5rem .9rem;font-size:.7rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap;text-transform:uppercase;letter-spacing:.5px}
+.tab-bar .tb:hover{color:var(--text)}
+.tab-bar .tb.act{color:#fff;border-bottom-color:var(--cyan);background:rgba(34,211,238,.1);border-radius:6px 6px 0 0}
+
+/* ── SUB-HEADER (instruction bar) ── */
+.sub-hdr{display:flex;align-items:center;justify-content:space-between;padding:.5rem .8rem;background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:1rem;gap:.6rem;flex-wrap:wrap}
+.sub-hdr .sh-back{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:.3rem .7rem;border-radius:6px;font-size:.68rem;cursor:pointer;font-family:'DM Sans',sans-serif}
+.sub-hdr .sh-info{font-size:.7rem;color:var(--muted);flex:1;text-align:center}
+.sub-hdr .sh-info strong{color:var(--gold)}
+.sub-hdr .sh-next{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:.3rem .7rem;border-radius:6px;font-size:.68rem;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* ── FORM ROWS (CDM style) ── */
+.form-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.8rem;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:.2rem;flex:1;min-width:140px}
+.fg label{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.fg input,.fg select,.fg textarea{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .6rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.75rem}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--cyan)}
+.fg textarea{resize:vertical;min-height:60px}
+
+/* ── BUREAU CHECKBOXES ── */
+.bureau-checks{display:flex;align-items:center;gap:.5rem}
+.bcheck{display:flex;align-items:center;gap:.2rem;font-size:.68rem;font-weight:600;cursor:pointer}
+.bcheck input[type=checkbox]{accent-color:var(--cyan);width:14px;height:14px}
+.bcheck.efx{color:#d4a843}.bcheck.xpn{color:var(--blue)}.bcheck.tu{color:var(--green)}
+
+/* ── BUTTONS ── */
+.btn{padding:.38rem .75rem;border-radius:7px;font-size:.7rem;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;border:1px solid var(--border);transition:all .15s;display:inline-flex;align-items:center;gap:.3rem}
+.btn-cy{background:var(--grad);border:none;color:#fff}
+.btn-cy:hover{opacity:.9;transform:translateY(-1px)}
+.btn-gd{background:var(--grad-gold);border:none;color:#fff}
+.btn-gn{background:var(--green);border:none;color:#fff}
+.btn-rd{background:var(--red);border:none;color:#fff}
+.btn-or{background:var(--orange);border:none;color:#fff}
+.btn-gh{background:transparent;color:var(--text)}
+.btn-gh:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn-sm{padding:.25rem .5rem;font-size:.62rem}
+
+/* ── DATA TABLE ── */
+.dt{width:100%;border-collapse:collapse;font-size:.72rem}
+.dt th{text-align:left;padding:.5rem .6rem;font-size:.58rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
+.dt td{padding:.5rem .6rem;border-bottom:1px solid rgba(148,163,184,.06)}
+.dt tr:hover td{background:rgba(34,211,238,.02)}
+.dt .bureau-tag{display:inline-block;padding:1px 5px;border-radius:4px;font-size:.55rem;font-weight:700;text-transform:uppercase}
+.dt .bureau-tag.efx{background:rgba(212,168,67,.15);color:#d4a843}
+.dt .bureau-tag.xpn{background:rgba(59,130,246,.15);color:var(--blue)}
+.dt .bureau-tag.tu{background:rgba(16,185,129,.15);color:var(--green)}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.b-active{background:rgba(16,185,129,.12);color:var(--green)}
+.b-pending{background:rgba(249,115,22,.12);color:var(--orange)}
+.b-sent{background:rgba(34,211,238,.12);color:var(--cyan)}
+.b-dispute{background:rgba(245,166,35,.12);color:var(--gold)}
+.b-deleted{background:rgba(16,185,129,.15);color:var(--green)}
+.b-overdue{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* ── PANEL ── */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:.8rem;overflow:hidden}
+.panel-h{padding:.6rem .8rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-t{font-size:.78rem;font-weight:600}
+.panel-b{padding:.8rem}
+
+/* ── STAT CARDS ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;margin-bottom:1rem}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.8rem 1rem;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc.c1::before{background:var(--grad)}.sc.c2::before{background:var(--grad-gold)}.sc.c3::before{background:var(--green)}.sc.c4::before{background:var(--red)}.sc.c5::before{background:var(--purple)}
+.sc-label{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:.3rem}
+.sc-val{font-size:1.4rem;font-weight:700;font-family:'Playfair Display',serif}
+.sc-sub{font-size:.58rem;margin-top:.2rem}
+.sc-sub.up{color:var(--green)}.sc-sub.dn{color:var(--red)}
+
+/* ── TRACKING: overdue row ── */
+.row-overdue td{background:rgba(239,68,68,.06)}
+
+/* ── SCORE RINGS ── */
+.ring{width:80px;height:80px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700}
+.ring-inner{width:60px;height:60px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.ring-inner small{font-size:.45rem;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400}
+.ring.poor{background:conic-gradient(var(--red) 0% 35%,var(--card2) 35%)}
+.ring.fair{background:conic-gradient(var(--orange) 0% 50%,var(--card2) 50%)}
+.ring.good{background:conic-gradient(var(--gold) 0% 65%,var(--card2) 65%)}
+.ring.great{background:conic-gradient(var(--green) 0% 85%,var(--card2) 85%)}
+
+/* ── TOAST ── */
+.toast-box{position:fixed;bottom:1.2rem;right:1.2rem;z-index:300;display:flex;flex-direction:column;gap:.4rem}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;font-size:.7rem;display:flex;align-items:center;gap:.4rem;box-shadow:0 4px 20px rgba(0,0,0,.3);min-width:220px;animation:slideR .25s ease}
+.toast.ok{border-left:3px solid var(--green)}.toast.err{border-left:3px solid var(--red)}.toast.inf{border-left:3px solid var(--cyan)}
+@keyframes slideR{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:.8rem}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:1.2rem;animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.modal-x{float:right;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem}
+
+/* ── AGENT GRID ── */
+.ag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.8rem}
+.ag-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.8rem;transition:all .2s}
+.ag-card:hover{border-color:var(--cyan);transform:translateY(-2px)}
+
+/* ── ACTIVITY FEED ── */
+.feed{display:flex;gap:.5rem;padding:.4rem 0;border-bottom:1px solid rgba(148,163,184,.05)}
+.feed-dot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.feed-t{font-size:.68rem;color:var(--muted)}.feed-t strong{color:var(--text)}
+.feed-ts{font-size:.52rem;color:rgba(148,163,184,.4);margin-top:1px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .side{transform:translateX(-100%)}.side.open{transform:translateX(0)}
+  .main{margin-left:0}.mob-tog{display:block}
+  .stats{grid-template-columns:1fr 1fr}.form-row{flex-direction:column}
+  .tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ag-grid{grid-template-columns:1fr}
+}
+
+/* ── API STATUS INDICATOR ── */
+.api-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.api-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.api-dot.off{background:var(--red);box-shadow:0 0 6px var(--red)}
+.api-dot.trying{background:var(--orange);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<aside class="side" id="side">
+  <div class="side-brand">
+    <div class="sb-icon">CX</div>
+    <div><div class="sb-name">CredX</div><div class="sb-sub">Command Center</div></div>
+  </div>
+  <nav class="side-nav">
+    <div class="sn-label">Operations</div>
+    <a class="sn-item act" onclick="nav('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+    <a class="sn-item" onclick="nav('dispute')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Dispute Manager<span class="sn-badge" id="b-disp">10</span></a>
+    <a class="sn-item" onclick="nav('clients')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Clients<span class="sn-badge" id="b-cli">3</span></a>
+    <a class="sn-item" onclick="nav('scores')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Score Tracker</a>
+    <a class="sn-item" onclick="nav('letters')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Letter Vault</a>
+    <div class="sn-label">Team</div>
+    <a class="sn-item" onclick="nav('agents')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33"/></svg>Agent Team<span class="sn-badge">6</span></a>
+    <a class="sn-item" onclick="nav('affiliates')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Affiliates</a>
+    <div class="sn-label">System</div>
+    <a class="sn-item" onclick="nav('api')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>API / OpenClaw<span class="api-dot off" id="api-status" style="margin-left:auto"></span></a>
+    <a class="sn-item" onclick="nav('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2"/></svg>Settings</a>
+  </nav>
+  <div class="side-foot">
+    <div class="sf-card"><div class="sf-av">JM</div><div><div class="sf-name">James Malloy</div><div class="sf-role">CEO · The Malloy Group</div></div></div>
+  </div>
+</aside>
+
+<!-- ═══════ MAIN ═══════ -->
+<div class="main">
+  <div class="top">
+    <div class="top-left">
+      <button class="mob-tog" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
+      <div class="top-title" id="pg-title">Dashboard</div>
+    </div>
+    <div class="top-right">
+      <span style="font-size:.6rem;color:var(--muted)" id="api-label">API: Disconnected</span>
+      <button class="tbtn" onclick="openModal('add-client')">+ Client</button>
+      <button class="tbtn pr" onclick="nav('dispute')">Dispute Manager</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+<!-- ══════════════════════════════════
+     DASHBOARD
+     ══════════════════════════════════ -->
+<div class="pg act" id="pg-dash">
+  <div class="stats" id="dash-stats"></div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:.8rem" class="dash-grid">
+    <div class="panel"><div class="panel-h"><span class="panel-t">Dispute Pipeline</span></div><div class="panel-b" id="dash-pipeline"></div></div>
+    <div>
+      <div class="panel"><div class="panel-h"><span class="panel-t">Agent Status</span></div><div class="panel-b" id="dash-agents"></div></div>
+      <div class="panel"><div class="panel-h"><span class="panel-t">Quick Actions</span></div><div class="panel-b" style="display:flex;flex-direction:column;gap:.4rem">
+        <button class="btn btn-cy" style="width:100%;justify-content:center" onclick="nav('dispute')">Open Dispute Manager</button>
+        <button class="btn btn-gd" style="width:100%;justify-content:center" onclick="openModal('add-client')">New Client Intake</button>
+        <button class="btn btn-gh" style="width:100%;justify-content:center" onclick="nav('scores')">Update Scores</button>
+        <button class="btn btn-gh" style="width:100%;justify-content:center" onclick="nav('api')">Connect OpenClaw</button>
+      </div></div>
+    </div>
+  </div>
+  <div class="panel"><div class="panel-h"><span class="panel-t">Recent Activity</span></div><div class="panel-b" id="dash-feed"></div></div>
+</div>
+
+<!-- ══════════════════════════════════
+     DISPUTE MANAGER (CDM MIRROR)
+     ══════════════════════════════════ -->
+<div class="pg" id="pg-dispute">
+  <!-- Client Header -->
+  <div class="client-hdr">
+    <div>
+      <div class="ch-name" id="dm-client-name">Select a client</div>
+      <div class="ch-email" id="dm-client-email"></div>
+    </div>
+    <select class="ch-select" id="dm-client-sel" onchange="loadDisputeClient(this.value)"></select>
+  </div>
+
+  <!-- CDM 8-Tab Bar -->
+  <div class="tab-bar" id="dm-tabs">
+    <div class="tb" onclick="dmTab('import',this)">Import Report</div>
+    <div class="tb act" onclick="dmTab('additem',this)">Add Item</div>
+    <div class="tb" onclick="dmTab('bureaus',this)">Bureaus</div>
+    <div class="tb" onclick="dmTab('creditors',this)">Creditors</div>
+    <div class="tb" onclick="dmTab('collectors',this)">Collectors</div>
+    <div class="tb" onclick="dmTab('respond',this)">Respond</div>
+    <div class="tb" onclick="dmTab('tracking',this)">Tracking</div>
+    <div class="tb" onclick="dmTab('results',this)">Results</div>
+  </div>
+
+  <!-- TAB: IMPORT REPORT -->
+  <div class="dm-pane" id="dmp-import" style="display:none">
+    <div class="sub-hdr">
+      <button class="sh-back" onclick="dmTabPrev()">‹ BACK</button>
+      <span class="sh-info">Import Smart Credit, MyFreeScoreNow, Identity IQ, MyscoreIQ and Privacy Guard Credit Reports. All data imported is <strong>Negative information</strong>. Inquiries and Positive are optional.</span>
+      <button class="sh-next" onclick="dmTabNext()">NEXT ›</button>
+    </div>
+    <div class="panel"><div class="panel-b">
+      <div class="form-row">
+        <div class="fg" style="max-width:220px"><label>Report Type</label><select><option>Identity IQ</option><option>Smart Credit</option><option>MyFreeScoreNow</option><option>Privacy Guard</option><option>MyscoreIQ</option></select></div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin-top:1rem">
+          <label style="font-size:.7rem;display:flex;align-items:center;gap:.3rem;cursor:pointer"><input type="checkbox" checked style="accent-color:var(--cyan)"> Reimport</label>
+          <button class="btn btn-or">REIMPORT</button>
+        </div>
+        <div style="margin-left:auto;text-align:center;margin-top:.6rem">
+          <div style="font-size:.72rem;font-weight:600;color:var(--gold)">Earn Credit Monitoring</div>
+          <div style="font-size:.68rem;color:var(--green)">Commissions</div>
+          <a href="https://credx.cardd.co" target="_blank" style="font-size:.65rem;color:var(--cyan)">Signup Here ↗</a>
+        </div>
+      </div>
+      <label style="font-size:.68rem;display:flex;align-items:center;gap:.3rem;cursor:pointer;color:var(--muted);margin-top:.3rem"><input type="checkbox" style="accent-color:var(--cyan)"> Credit Score Automation</label>
+    </div></div>
+  </div>
+
+  <!-- TAB: ADD ITEM -->
+  <div class="dm-pane" id="dmp-additem">
+    <div class="sub-hdr">
+      <button class="sh-back" onclick="dmTabPrev()">‹ BACK</button>
+      <span class="sh-info">In this area, you can add unlimited accounts and initiate your disputes.</span>
+      <button class="sh-next" onclick="dmTabNext()">NEXT ›</button>
+    </div>
+    <div class="panel"><div class="panel-b">
+      <div class="form-row">
+        <div class="fg"><label>Furnisher</label><input id="ai-furnisher" placeholder="e.g. CREDITONEBNK"></div>
+        <div class="fg"><label>Account Number</label><input id="ai-acctnum" placeholder="e.g. 444796260553"></div>
+        <div class="fg" style="max-width:160px"><label>Account Type</label><select id="ai-type"><option>Late Payment</option><option>Collection</option><option>Charge-off</option><option>Inquiry</option><option>Repossession</option><option>Bankruptcy</option><option>Foreclosure</option><option>Judgment</option></select></div>
+        <div class="fg" style="max-width:130px"><label>Balance</label><input id="ai-balance" placeholder="$0.00"></div>
+        <div class="bureau-checks" style="margin-top:1rem">
+          <label style="font-size:.62rem;color:var(--muted);margin-right:.3rem">Check All <input type="checkbox" onchange="document.querySelectorAll('.ai-bur').forEach(c=>c.checked=this.checked)"></label>
+          <label class="bcheck efx"><input type="checkbox" class="ai-bur" id="ai-efx"> EFX</label>
+          <label class="bcheck xpn"><input type="checkbox" class="ai-bur" id="ai-xpn"> XPN</label>
+          <label class="bcheck tu"><input type="checkbox" class="ai-bur" id="ai-tu"> TU</label>
+        </div>
+        <button class="btn btn-gn" style="margin-top:1rem" onclick="addItem()">SAVE</button>
+      </div>
+    </div></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:.5rem">
+      <button class="btn btn-cy" onclick="initiateDispute()">DISPUTE</button>
+    </div>
+    <div class="panel">
+      <div class="panel-h">
+        <span class="panel-t"><label style="font-size:.62rem"><input type="checkbox"> All</label> &nbsp; <span style="font-size:.62rem;color:var(--muted)" id="item-count">Total Accounts: 0</span></span>
+        <button class="btn btn-rd btn-sm" onclick="deleteSelected()">DELETE</button>
+      </div>
+      <div class="panel-b" style="padding:0;overflow-x:auto">
+        <table class="dt" id="items-table">
+          <thead><tr><th></th><th>Furnisher</th><th>Account Number</th><th>Account Type</th><th>Balance</th><th>EFX</th><th>XPN</th><th>TU</th><th>In-Dispute</th><th>Action</th></tr></thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: BUREAUS -->
+  <div class="dm-pane" id="dmp-bureaus" style="display:none">
+    <div class="sub-hdr">
+      <button class="sh-back" onclick="dmTabPrev()">‹ BACK</button>
+      <div style="display:flex;align-items:center;gap:.6rem"><a href="#" style="font-size:.68rem;color:var(--green)">Dispute Strategies</a><a href="#" style="font-size:.68rem;color:var(--green)">Letter Guide</a><span style="font-size:.65rem;color:var(--muted)">Last Round: <strong style="color:var(--gold)" id="bur-round">—</strong></span></div>
+      <span class="sh-info">Dispute inaccurate items on your client's credit report.</span>
+      <button class="sh-next" onclick="dmTabNext()">NEXT ›</button>
+    </div>
+    <div class="panel"><div class="panel-b">
+      <div class="form-row">
+        <div class="fg"><label>Furnisher</label><select id="bur-furnisher"></select></div>
+        <div class="fg" style="max-width:130px"><label>Account Number</label><select id="bur-acct"><option>N/A</option></select></div>
+        <div class="fg" style="max-width:130px"><label>Account Type</label><select id="bur-type"><option>Inquiry</option><option>Late Payment</option><option>Collection</option><option>Charge-off</option></select></div>
+        <div class="fg" style="max-width:100px"><label>Balance</label><input id="bur-bal" value="$0"></div>
+        <div class="fg" style="max-width:120px"><label>Date Added</label><input id="bur-date" type="date"></div>
+        <div class="bureau-checks" style="margin-top:1rem">
+          <label class="bcheck efx"><input type="checkbox" id="bur-efx"> EFX</label>
+          <label class="bcheck xpn"><input type="checkbox" id="bur-xpn"> XPN</label>
+          <label class="bcheck tu"><input type="checkbox" id="bur-tu" checked> TU</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg" style="max-width:200px"><label>Dispute Reason</label><select><option>Dispute Reasons</option><option>Not mine</option><option>Never late</option><option>Paid/Closed</option><option>Identity theft</option><option>Inaccurate balance</option><option>Inaccurate status</option></select></div>
+        <div class="fg" style="max-width:160px"><label>Instruction</label><select><option>Instructions</option><option>Remove immediately</option><option>Update to current</option><option>Verify or remove</option></select></div>
+        <div class="fg" style="max-width:200px"><label>Dispute Flow Letter</label><select><option>Dispute Flow Letters</option><option>Round 1 - 609</option><option>Round 2 - 611</option><option>Round 3 - MOV</option></select></div>
+        <div class="fg" style="max-width:200px"><label>Campaign Letter</label><select><option>Campaign Letters</option><option>Consumer Law</option><option>FCRA Rights</option><option>Custom</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>General Letter</label><select><option>General Letters</option><option>609 Verification</option><option>611 Dispute</option><option>Debt Validation</option><option>Goodwill</option><option>Inquiry Removal</option><option>Method of Verification</option></select></div>
+        <button class="btn btn-gn" style="margin-top:1rem" onclick="addBureauDispute()">ADD YOUR DISPUTE</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:.4rem;margin-top:.3rem">
+        <label style="font-size:.65rem;display:flex;align-items:center;gap:.2rem;color:var(--muted)"><input type="checkbox"> Manual Letter</label>
+        <a href="#" style="font-size:.65rem;color:var(--green)">Create Manual Letter</a>
+      </div>
+      <div style="display:flex;gap:.8rem;margin-top:.8rem;flex-wrap:wrap;align-items:center">
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Credit Analyzer</a>
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">View Credit Report</a>
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Round Reason Tracker</a>
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Notes</a>
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Personal Information fix</a>
+        <div style="margin-left:auto;display:flex;gap:.4rem">
+          <button class="btn btn-or btn-sm">AI REWRITER</button>
+          <button class="btn btn-gn btn-sm">SEND TO PRINT</button>
+        </div>
+      </div>
+    </div></div>
+    <div class="panel"><div class="panel-h"><span class="panel-t"><label style="font-size:.62rem"><input type="checkbox"> Select All</label> <button class="btn btn-rd btn-sm" style="margin-left:.4rem">DELETE</button></span></div>
+      <div class="panel-b" style="padding:0;overflow-x:auto"><table class="dt"><thead><tr><th></th><th>Furnisher</th><th>Account Number</th><th>Bureaus</th><th>Dispute Reason</th><th>Letter</th><th>Action</th></tr></thead><tbody id="bur-tbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1.5rem">No data is available in this table</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- TAB: CREDITORS -->
+  <div class="dm-pane" id="dmp-creditors" style="display:none">
+    <div class="sub-hdr">
+      <button class="sh-back" onclick="dmTabPrev()">‹ BACK</button>
+      <span class="sh-info">In this screen, you can create disputes directly for the creditors.</span>
+      <button class="sh-next" onclick="dmTabNext()">NEXT ›</button>
+    </div>
+    <div class="panel"><div class="panel-b">
+      <div class="form-row">
+        <div class="fg"><label>Furnisher</label><select id="cred-furn"></select></div>
+        <div class="fg"><label>Address Search</label><button class="btn btn-or" style="width:100%">🔍</button></div>
+        <div class="fg"><label>Account Number</label><select><option>N/A</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg" style="max-width:140px"><label>Account Type</label><select><option>Inquiry</option><option>Late Payment</option><option>Collection</option><option>Charge-off</option></select></div>
+        <div class="fg" style="max-width:100px"><label>Balance</label><input value="$0"></div>
+        <div class="fg" style="max-width:140px"><label>Date Added</label><input type="date"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg" style="max-width:200px"><label>Dispute Reason</label><select><option>Dispute Reasons</option></select></div>
+        <div class="fg" style="max-width:160px"><label>Instruction</label><select><option>Instructions</option></select></div>
+        <div class="fg" style="max-width:200px"><label>Dispute Flow Letter</label><select><option>Dispute Flow Letters</option></select></div>
+        <div class="fg" style="max-width:200px"><label>Campaign Letter</label><select><option>Campaign Letters</option></select></div>
+      </div>
+      <div class="form-row"><div class="fg"><label>General Letter</label><select><option>General Letters</option></select></div><button class="btn btn-gn" style="margin-top:1rem" onclick="toast('ok','Creditor dispute added')">ADD YOUR DISPUTE</button></div>
+    </div></div>
+    <div class="panel"><div class="panel-b" style="padding:0"><table class="dt"><thead><tr><th>All</th><th>Furnisher</th><th>Account Number</th><th>Account Type</th><th>Dispute Reason</th></tr></thead><tbody><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.5rem">No data is available in this table</td></tr></tbody></table></div></div>
+  </div>
+
+  <!-- TAB: COLLECTORS -->
+  <div class="dm-pane" id="dmp-collectors" style="display:none">
+    <div class="sub-hdr">
+      <button class="sh-back" onclick="dmTabPrev()">‹ BACK</button>
+      <span class="sh-info">In this screen, you can create letters directly for the collector.</span>
+      <button class="sh-next" onclick="dmTabNext()">NEXT ›</button>
+    </div>
+    <div class="panel"><div class="panel-b">
+      <div class="form-row">
+        <div class="fg"><label>Furnisher</label><select id="coll-furn"></select></div>
+        <div class="fg"><label>Address Search</label><button class="btn btn-or" style="width:100%">🔍</button></div>
+        <div class="fg"><label>Account Number</label><select><option>N/A</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg" style="max-width:140px"><label>Account Type</label><select><option>Inquiry</option><option>Collection</option></select></div>
+        <div class="fg" style="max-width:100px"><label>Balance</label><input value="$0"></div>
+        <div class="fg" style="max-width:140px"><label>Date Added</label><input type="date"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg" style="max-width:200px"><label>Dispute Reason</label><select><option>Dispute Reasons</option></select></div>
+        <div class="fg" style="max-width:160px"><label>Instruction</label><select><option>Instructions</option></select></div>
+        <div class="fg" style="max-width:200px"><label>Dispute Flow Letter</label><select><option>Dispute Flow Letters</option></select></div>
+        <div class="fg" style="max-width:200px"><label>Campaign Letter</label><select><option>Campaign Letters</option></select></div>
+      </div>
+      <div class="form-row"><div class="fg"><label>General Letter</label><select><option>General Letters</option></select></div><button class="btn btn-gn" style="margin-top:1rem" onclick="toast('ok','Collector dispute added')">ADD YOUR DISPUTE</button></div>
+      <div style="display:flex;gap:.6rem;margin-top:.6rem;flex-wrap:wrap">
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Credit Analyzer</a>
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">View Credit Report</a>
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Notes</a>
+        <a href="#" style="font-size:.65rem;color:var(--green)">Dunning Letter Response</a>
+        <div style="margin-left:auto;display:flex;gap:.4rem">
+          <button class="btn btn-or btn-sm">AI REWRITER</button>
+          <button class="btn btn-gn btn-sm">SEND TO PRINT</button>
+        </div>
+      </div>
+    </div></div>
+    <div class="panel"><div class="panel-b" style="padding:0"><table class="dt"><thead><tr><th>All</th><th>Furnisher</th><th>Account Number</th><th>Account Type</th><th>Dispute Reason</th></tr></thead><tbody><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.5rem">No data is available in this table</td></tr></tbody></table></div></div>
+  </div>
+
+  <!-- TAB: RESPOND -->
+  <div class="dm-pane" id="dmp-respond" style="display:none">
+    <div class="sub-hdr">
+      <button class="sh-back" onclick="dmTabPrev()">‹ BACK</button>
+      <span class="sh-info">In this area you can respond to the bureaus, collectors or creditors</span>
+      <button class="sh-next" onclick="dmTabNext()">NEXT ›</button>
+    </div>
+    <div class="panel"><div class="panel-b">
+      <div class="form-row">
+        <div class="fg"><label>Furnisher</label><select id="resp-furn"></select></div>
+        <div class="fg"><label>Address Search</label><button class="btn btn-or" style="width:100%">🔍</button></div>
+        <div class="fg"><label>Account Number</label><select><option>N/A</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg" style="max-width:140px"><label>Account Type</label><select><option>Inquiry</option><option>Late Payment</option><option>Collection</option></select></div>
+        <div class="fg" style="max-width:100px"><label>Balance</label><input value="$0"></div>
+        <div class="fg" style="max-width:140px"><label>Date Added</label><input type="date"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg" style="max-width:200px"><label>Dispute Reason</label><select><option>Dispute Reasons</option></select></div>
+        <div class="fg" style="max-width:160px"><label>Instruction</label><select><option>Instructions</option></select></div>
+        <div class="fg" style="max-width:200px"><label>Respond Letter</label><select><option>Respond Letter</option><option>Method of Verification</option><option>Intent to Litigate</option><option>FTC Complaint</option><option>CFPB Complaint</option></select></div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-top:.4rem">
+        <button class="btn btn-cy" onclick="toast('ok','Response dispute created')">ADD YOUR DISPUTE</button>
+        <label style="font-size:.65rem;display:flex;align-items:center;gap:.2rem;color:var(--muted)"><input type="checkbox"> Manual Letter</label>
+        <a href="#" style="font-size:.65rem;color:var(--green)">Create Manual Letter</a>
+      </div>
+      <div style="display:flex;gap:.6rem;margin-top:.6rem;flex-wrap:wrap">
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Credit Analyzer</a>
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Round Reason Tracker</a>
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Notes</a>
+        <div style="margin-left:auto;display:flex;gap:.4rem">
+          <button class="btn btn-or btn-sm">AI REWRITER</button>
+          <button class="btn btn-gn btn-sm">SEND TO PRINT</button>
+        </div>
+      </div>
+    </div></div>
+    <div class="panel"><div class="panel-b" style="padding:0"><table class="dt"><thead><tr><th>All</th><th>Furnisher</th><th>Account Number</th><th>Account Type</th><th>Dispute Reason</th><th>Action</th></tr></thead><tbody><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">No data is available in this table</td></tr></tbody></table></div></div>
+  </div>
+
+  <!-- TAB: TRACKING -->
+  <div class="dm-pane" id="dmp-tracking" style="display:none">
+    <div class="sub-hdr">
+      <button class="sh-back" onclick="dmTabPrev()">‹ BACK</button>
+      <span class="sh-info">In this area, you will be able to track all letters sent and their due dates.</span>
+      <button class="sh-next" onclick="dmTabNext()">NEXT ›</button>
+    </div>
+    <div style="display:flex;gap:.4rem;margin-bottom:.8rem;flex-wrap:wrap">
+      <button class="btn btn-or btn-sm">ARCHIVE ROUND</button>
+      <button class="btn btn-rd btn-sm">RE-SEND</button>
+      <button class="btn btn-gh btn-sm">CHANGE FOLLOW UP LETTER DUE DATE</button>
+      <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
+        <a href="#" style="font-size:.62rem;color:var(--cyan)">New Updates Explanation</a>
+        <a href="#" style="font-size:.62rem;color:var(--cyan)">Progress Report</a>
+      </div>
+    </div>
+    <div style="display:flex;gap:.6rem;align-items:center;margin-bottom:.6rem">
+      <label style="font-size:.68rem;display:flex;gap:.3rem;align-items:center;color:var(--muted)"><input type="radio" name="tk-view" checked> Current</label>
+      <label style="font-size:.68rem;display:flex;gap:.3rem;align-items:center;color:var(--muted)"><input type="radio" name="tk-view"> Archive</label>
+      <div class="fg" style="max-width:180px;margin-left:.5rem"><select><option>Identity IQ</option><option>Smart Credit</option></select></div>
+      <label style="font-size:.65rem;display:flex;align-items:center;gap:.2rem;color:var(--muted)"><input type="checkbox" checked style="accent-color:var(--cyan)"> Quick Import</label>
+      <button class="btn btn-cy btn-sm">CHECK NEW UPDATES</button>
+      <button class="btn btn-gh btn-sm" style="margin-left:auto">Update Deleted Accounts</button>
+    </div>
+    <div class="panel"><div class="panel-b" style="padding:0;overflow-x:auto">
+      <table class="dt" id="tracking-table">
+        <thead><tr><th></th><th>Sent</th><th>Days</th><th>Due By</th><th>Organization</th><th>Campaign/Letter/AI</th><th>Letter Title</th><th>Letter Sent To</th></tr></thead>
+        <tbody id="tracking-tbody"></tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <!-- TAB: RESULTS -->
+  <div class="dm-pane" id="dmp-results" style="display:none">
+    <div class="sub-hdr">
+      <button class="sh-back" onclick="dmTabPrev()">‹ BACK</button>
+      <span class="sh-info">In this area, you can update your clients accounts with new deletions and corrections.</span>
+    </div>
+    <div class="panel"><div class="panel-b">
+      <div class="form-row">
+        <div class="fg"><label>Furnisher</label><select id="res-furn"></select></div>
+        <div class="fg" style="max-width:130px"><label>Account Number</label><select><option>N/A</option></select></div>
+        <div class="fg" style="max-width:130px"><label>Account Type</label><select><option>Inquiry</option><option>Late Payment</option><option>Collection</option><option>Charge-off</option></select></div>
+        <div class="fg" style="max-width:100px"><label>Balance</label><input value="$0"></div>
+        <div class="bureau-checks" style="margin-top:1rem">
+          <label style="font-size:.62rem;color:var(--muted);margin-right:.2rem"><input type="checkbox"> All</label>
+          <label class="bcheck efx"><input type="checkbox"> EFX</label>
+          <label class="bcheck xpn"><input type="checkbox"> XPN</label>
+          <label class="bcheck tu"><input type="checkbox" checked> TU</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg" style="max-width:180px"><label style="color:var(--red)">Equifax Account</label><select><option></option><option>Deleted</option><option>In-Dispute</option><option>Updated</option><option>Verified</option></select></div>
+        <div class="fg" style="max-width:180px"><label style="color:var(--blue)">Experian Account</label><select><option>In-Dispute</option><option>Deleted</option><option>Updated</option><option>Verified</option></select></div>
+        <div class="fg" style="max-width:180px"><label style="color:var(--green)">TransUnion Account</label><select><option>In-Dispute</option><option>Deleted</option><option>Updated</option><option>Verified</option></select></div>
+        <button class="btn btn-gd" style="margin-top:1rem">INVOICE</button>
+      </div>
+      <div style="display:flex;gap:.4rem;align-items:center;margin-top:.3rem">
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Result Explanations</a>
+        <a href="#" style="font-size:.65rem;color:var(--cyan)">Notes</a>
+      </div>
+      <label style="font-size:.65rem;display:flex;align-items:center;gap:.2rem;color:var(--muted);margin-top:.5rem"><input type="checkbox"> Include Score Updates With Deletion Results</label>
+      <div style="display:flex;gap:.4rem;margin-top:.6rem;flex-wrap:wrap">
+        <button class="btn btn-gn">EMAIL DELETION RESULTS</button>
+        <button class="btn btn-or">UPDATE SCORE/HISTORY</button>
+        <label style="font-size:.68rem;display:flex;gap:.3rem;align-items:center;color:var(--muted);margin-left:.5rem"><input type="radio" name="rv" checked> Results</label>
+        <label style="font-size:.68rem;display:flex;gap:.3rem;align-items:center;color:var(--muted)"><input type="radio" name="rv"> Progress Report</label>
+        <div style="margin-left:auto"><button class="btn btn-cy">REBUILD Progress Report</button></div>
+      </div>
+    </div></div>
+    <div class="panel"><div class="panel-b" style="padding:0;overflow-x:auto">
+      <table class="dt" id="results-table">
+        <thead><tr><th></th><th>Date</th><th>Account Title</th><th>Account Number</th><th>Account Type</th><th>Balance</th><th class="bureau-tag efx">EFX</th><th class="bureau-tag xpn">XPN</th><th class="bureau-tag tu">TU</th><th>EFX Status</th><th>XPN Status</th><th>TU Status</th></tr></thead>
+        <tbody id="results-tbody"></tbody>
+      </table>
+    </div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     CLIENTS
+     ══════════════════════════════════ -->
+<div class="pg" id="pg-clients">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
+    <input class="fg" style="max-width:260px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .6rem;color:var(--text);font-size:.75rem" placeholder="Search clients..." oninput="renderClients(this.value)">
+    <button class="btn btn-cy" onclick="openModal('add-client')">+ Add Client</button>
+  </div>
+  <div class="panel"><div class="panel-b" style="padding:0;overflow-x:auto"><table class="dt"><thead><tr><th>Client</th><th>Email</th><th>Stage</th><th>Items</th><th>Score Δ</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="cli-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCORES, LETTERS, AGENTS, AFFILIATES, API, SETTINGS — compact
+     ══════════════════════════════════ -->
+<div class="pg" id="pg-scores"><div class="panel"><div class="panel-h"><span class="panel-t">Score Tracker</span></div><div class="panel-b"><div class="form-row"><div class="fg" style="max-width:260px"><label>Select Client</label><select id="sc-sel" onchange="loadScores(this.value)"></select></div></div><div id="sc-display" style="display:none"><div class="stats" id="sc-rings" style="grid-template-columns:repeat(3,1fr)"></div><div class="panel"><div class="panel-b" style="padding:0;overflow-x:auto"><table class="dt"><thead><tr><th>Date</th><th>EQ</th><th>EX</th><th>TU</th><th>Notes</th></tr></thead><tbody id="sc-tbody"></tbody></table></div></div></div></div></div></div>
+
+<div class="pg" id="pg-letters"><div id="ltr-content"></div></div>
+
+<div class="pg" id="pg-agents"><div style="display:flex;justify-content:space-between;margin-bottom:.8rem"><p style="font-size:.72rem;color:var(--muted)">AI + Human agent team running CredX operations</p><button class="btn btn-cy" onclick="openModal('add-agent')">+ Add Agent</button></div><div class="ag-grid" id="ag-grid"></div><div class="panel" style="margin-top:.8rem"><div class="panel-h"><span class="panel-t">Agent Activity Log</span></div><div class="panel-b" id="ag-log"></div></div></div>
+
+<div class="pg" id="pg-affiliates"><div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="sc c1"><div class="sc-label">Referrals</div><div class="sc-val">89</div></div><div class="sc c2"><div class="sc-label">Conversions</div><div class="sc-val">23</div></div><div class="sc c3"><div class="sc-label">Earned</div><div class="sc-val">$1,240</div></div><div class="sc c5"><div class="sc-label">Partners</div><div class="sc-val">8</div></div></div><div class="panel"><div class="panel-b" style="padding:0;overflow-x:auto"><table class="dt"><thead><tr><th>Partner</th><th>Category</th><th>Commission</th><th>Clicks</th><th>Conversions</th><th>Link</th></tr></thead><tbody id="aff-tbody"></tbody></table></div></div></div>
+
+<!-- API / OPENCLAW PAGE -->
+<div class="pg" id="pg-api">
+  <div class="panel">
+    <div class="panel-h"><span class="panel-t">OpenClaw API Connection</span></div>
+    <div class="panel-b">
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:.8rem">Connect your CredX Command Center to the OpenClaw backend running on your VPS. This enables real-time data sync, AI agent orchestration, and automated dispute processing.</p>
+      <div class="form-row">
+        <div class="fg"><label>API Base URL</label><input id="api-url" value="https://credxme.com/api" placeholder="https://your-server.com/api"></div>
+        <div class="fg" style="max-width:200px"><label>API Key</label><input id="api-key" type="password" placeholder="your-api-key"></div>
+        <button class="btn btn-cy" style="margin-top:1rem" onclick="testAPI()">Test Connection</button>
+      </div>
+      <div id="api-result" style="margin-top:.6rem"></div>
+      <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:.8rem">
+        <div style="font-size:.72rem;font-weight:600;margin-bottom:.5rem">Integration Endpoints</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem" id="api-endpoints"></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-h"><span class="panel-t">Server Status (credx VPS)</span></div>
+    <div class="panel-b" id="server-status">
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        <div style="display:flex;justify-content:space-between;padding:.3rem .5rem;background:var(--surface);border-radius:6px"><span style="font-size:.72rem">Docker</span><span class="badge b-active">Running</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.3rem .5rem;background:var(--surface);border-radius:6px"><span style="font-size:.72rem">PostgreSQL</span><span class="badge b-active">Running</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.3rem .5rem;background:var(--surface);border-radius:6px"><span style="font-size:.72rem">SuperAGI</span><span class="badge b-active">Running</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.3rem .5rem;background:var(--surface);border-radius:6px"><span style="font-size:.72rem">OpenClaw Agent Framework</span><span class="badge b-pending">Needs Config</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.3rem .5rem;background:var(--surface);border-radius:6px"><span style="font-size:.72rem">Cesar Chatbot Backend</span><span class="badge b-pending">Pending (Zero Claw)</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pg" id="pg-settings">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
+    <div class="panel"><div class="panel-h"><span class="panel-t">Business Profile</span></div><div class="panel-b">
+      <div class="form-row" style="flex-direction:column"><div class="fg"><label>Company</label><input value="The Malloy Group Financial LLC"></div><div class="fg"><label>Brand</label><input value="CredX Financial Services"></div><div class="fg"><label>Email</label><input value="contact@credxme.com"></div><div class="fg"><label>Website</label><input value="credxme.com"></div></div>
+      <button class="btn btn-cy" style="margin-top:.4rem">Save</button>
+    </div></div>
+    <div class="panel"><div class="panel-h"><span class="panel-t">Integrations</span></div><div class="panel-b" style="display:flex;flex-direction:column;gap:.4rem">
+      <div style="display:flex;justify-content:space-between;padding:.4rem;background:var(--surface);border-radius:6px"><div><div style="font-size:.72rem;font-weight:600">Stripe</div><div style="font-size:.55rem;color:var(--muted)">$150 down + $75/mo</div></div><span class="badge b-pending">Setup</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.4rem;background:var(--surface);border-radius:6px"><div><div style="font-size:.72rem;font-weight:600">Email (SendGrid)</div><div style="font-size:.55rem;color:var(--muted)">Welcome + status emails</div></div><span class="badge b-pending">Setup</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.4rem;background:var(--surface);border-radius:6px"><div><div style="font-size:.72rem;font-weight:600">Client Dispute Manager</div><div style="font-size:.55rem;color:var(--muted)">CRM platform</div></div><span class="badge b-active">Connected</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.4rem;background:var(--surface);border-radius:6px"><div><div style="font-size:.72rem;font-weight:600">Cesar AI (Zero Claw)</div><div style="font-size:.55rem;color:var(--muted)">Live chat handoff</div></div><span class="badge b-pending">Pending</span></div>
+    </div></div>
+  </div>
+</div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal-c"></div></div>
+<div class="toast-box" id="toast-box"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CREDX ENGINE v2 — CDM-Mirrored
+   ═══════════════════════════════════════════ */
+const DB={
+  clients:[
+    {id:1,name:'Richard Bobb',email:'tr*****ubb8@gmail.com',stage:'dispute',items:[
+      {id:1,furnisher:'CREDITONEBNK',acct:'444796260553',type:'Late Payment',bal:'$8.00',efx:true,xpn:true,tu:true,inDispute:true},
+      {id:2,furnisher:'MUNCPL CR UN',acct:'42909',type:'Late Payment',bal:'$166.00',efx:false,xpn:true,tu:true,inDispute:true},
+      {id:3,furnisher:'MUNCPL CR UN',acct:'42909',type:'Late Payment',bal:'$197.00',efx:false,xpn:false,tu:true,inDispute:true},
+      {id:4,furnisher:'MIDLAND CRED (Original Creditor: 01 COMENITY CAPITAL BANK)',acct:'30421',type:'Collection',bal:'$6,805.00',efx:false,xpn:true,tu:true,inDispute:true},
+      {id:5,furnisher:'CAP ONE AUTO',acct:'6201010991274',type:'Charge-off',bal:'$21,089.00',efx:true,xpn:true,tu:false,inDispute:true},
+      {id:6,furnisher:'CCB/ZALESCC',acct:'578097403591',type:'Charge-off',bal:'$0.00',efx:false,xpn:true,tu:false,inDispute:true},
+      {id:7,furnisher:'BK OF AMER | 10/31/2023',acct:'N/A',type:'Inquiry',bal:'$0.00',efx:false,xpn:false,tu:true,inDispute:true},
+      {id:8,furnisher:'CBC/WANTAGH MAZDA | 02/16/2024',acct:'N/A',type:'Inquiry',bal:'$0.00',efx:false,xpn:true,tu:false,inDispute:true},
+      {id:9,furnisher:'DEFI/TMCC/MAZDA FIN SV | 02/16/2024',acct:'N/A',type:'Inquiry',bal:'$0.00',efx:false,xpn:true,tu:false,inDispute:true},
+      {id:10,furnisher:'JPMCB CARD | 12/05/2023',acct:'N/A',type:'Inquiry',bal:'$0.00',efx:false,xpn:true,tu:false,inDispute:true}
+    ],tracking:[
+      {sent:'5/6/2025 12:57:41 PM',days:35,due:'6/10/2025 12:57:41 PM',overdue:true,org:'Credit Bureau - EFX - ONEMAIN | 04/15/2025, ONEMAIN | 04/12/2024, MAZDA | 02/16/2024',campaign:'Manual',letter:'Consumer Law',sentTo:'Respond Credit Bureau - EFX'},
+      {sent:'5/6/2025 12:57:41 PM',days:35,due:'6/10/2025 12:57:41 PM',overdue:true,org:'Credit Bureau - TU - WANTAGH MAZD | 02/16/2024, ONEMAIN | 04/15/2025, ONEMAIN | 04/12/2024, BK OF AMER | 10/31/2023',campaign:'Manual',letter:'Consumer Law',sentTo:'Respond Credit Bureau - TU'},
+      {sent:'5/6/2025 12:57:41 PM',days:35,due:'6/10/2025 12:57:41 PM',overdue:true,org:'Credit Bureau - XPN - TD BANK N.A. | 04/18/2024, ONEMAIN | 05/18/2024, MUNICIPAL CREDIT UNION | 05/23/2024, JPMCB CARD | 12/05/2023, DEFI/TMCC/MAZDA FIN SV | 02/16/2024, CBC/WANTAGH MAZDA | 02/16/2024',campaign:'Manual',letter:'Consumer Law',sentTo:'Respond Credit Bureau - XPN'},
+      {sent:'5/6/2025 12:57:41 PM',days:35,due:'6/10/2025 12:57:41 PM',overdue:true,org:'Credit Bureau - EFX - MUNCPL CR UN, CREDITONEBNK, CAP ONE AUTO',campaign:'Manual',letter:'Consumer Law',sentTo:'Respond Credit Bureau - EFX - CREDITONEBNK (444796260553)'},
+      {sent:'5/6/2025 12:57:41 PM',days:35,due:'6/10/2025 12:57:41 PM',overdue:true,org:'Credit Bureau - TU - MIDLAND CRED (Original Creditor: 01 COMENITY CAPITAL BANK), MUNCPL CR UN, CREDITONEBNK, CAP ONE AUTO',campaign:'Manual',letter:'Consumer Law',sentTo:'Respond Credit Bureau - TU'},
+      {sent:'5/6/2025 12:57:41 PM',days:35,due:'6/10/2025 12:57:41 PM',overdue:true,org:'Credit Bureau - XPN - MIDLAND CRED (Original Creditor: 01 COMENITY CAPITAL BANK), MUNCPL CR UN, CREDITONEBNK',campaign:'Manual',letter:'Consumer Law',sentTo:'Respond Credit Bureau - XPN'}
+    ],results:[
+      {date:'06-11-2025',title:'MUNCPL CR UN',acct:'42909',type:'Late Payment',bal:'$166.00',efx:true,xpn:false,tu:false,efxStatus:'Deleted',xpnStatus:'In-Dispute',tuStatus:'In-Dispute'}
+    ],scores:[{date:'2025-05-01',eq:520,ex:505,tu:530,note:'Initial'},{date:'2025-07-01',eq:558,ex:540,tu:562,note:'After R1'},{date:'2025-09-01',eq:585,ex:572,tu:590,note:'After R2 - 1 deletion'}],joined:'2025-04-20'},
+    {id:2,name:'Marcus Johnson',email:'marcus@email.com',stage:'audit',items:[],tracking:[],results:[],scores:[{date:'2026-02-15',eq:567,ex:546,tu:587,note:'Initial'},{date:'2026-03-15',eq:612,ex:598,tu:625,note:'2 collections removed'}],joined:'2026-02-15'},
+    {id:3,name:'Keisha Williams',email:'keisha@email.com',stage:'dispute',items:[],tracking:[],results:[],scores:[{date:'2026-01-20',eq:580,ex:565,tu:590,note:'Initial'},{date:'2026-03-20',eq:645,ex:632,tu:651,note:'Inquiry removed'}],joined:'2026-01-20'}
+  ],
+  agents:[
+    {id:1,name:'CredX AI',role:'Credit Analysis Engine',type:'ai',status:'online',color:'#22d3ee',tasks:24,acc:'97%',desc:'Automated credit report analysis, dispute letter generation, score predictions'},
+    {id:2,name:'Cesar',role:'Live Support Agent',type:'human',status:'offline',color:'#f5a623',tasks:0,acc:'—',desc:'Chatbot backend handoff (pending Zero Claw deployment)'},
+    {id:3,name:'Dispute Bot',role:'Letter Automation',type:'ai',status:'online',color:'#10b981',tasks:8,acc:'99%',desc:'Auto-generates 609/611/623 letters with client data'},
+    {id:4,name:'Score Monitor',role:'Bureau Tracking',type:'ai',status:'online',color:'#a78bfa',tasks:12,acc:'100%',desc:'Tracks 3-bureau changes, alerts on movement'},
+    {id:5,name:'Onboarding Agent',role:'Client Intake',type:'ai',status:'online',color:'#f97316',tasks:3,acc:'95%',desc:'Form processing, welcome emails, credit pull scheduling'},
+    {id:6,name:'Revenue Agent',role:'Billing & Affiliates',type:'ai',status:'busy',color:'#ef4444',tasks:6,acc:'98%',desc:'Billing cycles, affiliate tracking, payment reminders'}
+  ],
+  affiliates:[
+    {name:'MyFreeScoreNow',cat:'Monitoring',comm:'$12/signup',clicks:145,conv:8,url:'https://myfreescorenow.com'},
+    {name:'IdentityIQ',cat:'Monitoring',comm:'$15/trial',clicks:98,conv:5,url:'https://www.identityiq.com'},
+    {name:'Self Credit Builder',cat:'Building',comm:'$8/acct',clicks:210,conv:12,url:'https://www.self.inc/refer/credx'},
+    {name:'Credit Strong',cat:'Building',comm:'$10/acct',clicks:67,conv:3,url:'https://www.creditstrong.com'},
+    {name:'Experian Boost',cat:'Boost',comm:'$5/act',clicks:320,conv:18,url:'https://www.experian.com/boost'},
+    {name:'Grow Credit',cat:'Building',comm:'$7/signup',clicks:55,conv:2,url:'https://www.growcredit.com'},
+    {name:'Kovo Credit',cat:'Building',comm:'$6/acct',clicks:42,conv:1,url:'https://www.kovocredit.com'},
+    {name:'Ava Finance',cat:'Tools',comm:'$10/install',clicks:88,conv:4,url:'https://www.meetava.app'}
+  ],
+  letters:{
+    '609':{name:'609 Verification (FCRA §609)',body:'Pursuant to FCRA §609, I request verification of [ACCOUNT] reported on my credit file. Please provide original signed agreement, complete payment history, and documentation used to verify. If unable within 30 days, remove per §611.'},
+    '611':{name:'General Dispute (FCRA §611)',body:'I dispute the following inaccurate information: [ACCOUNT]. Reason: [REASON]. Please investigate and correct within 30 days per FCRA §611.'},
+    'debt_val':{name:'Debt Validation (FDCPA §809)',body:'Per FDCPA §809(b), I request validation of [ACCOUNT]. Provide original signed contract, chain of assignment, complete payment history, and proof statute of limitations is active.'},
+    'goodwill':{name:'Goodwill Adjustment',body:'I request a goodwill adjustment on account [ACCOUNT]. During [PERIOD] I experienced [HARDSHIP]. Since then I have maintained on-time payments. Please remove late notation(s).'},
+    'inquiry':{name:'Hard Inquiry Removal',body:'I did not authorize inquiry from [COMPANY] on [DATE]. This was made without written consent, violating FCRA §604. Please remove immediately.'},
+    'mov':{name:'Method of Verification (§611(a)(7))',body:'I disputed [ACCOUNT] and it was reported "verified." Per §611(a)(7), provide: person contacted at furnisher, documents reviewed, and method of communication. If e-OSCAR only, this may not constitute reasonable investigation.'}
+  }
+};
+
+let curClient=null, dmTabIdx=1;
+const DM_TABS=['import','additem','bureaus','creditors','collectors','respond','tracking','results'];
+
+// ── NAV ──
+function nav(id){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('act'));
+  document.querySelectorAll('.sn-item').forEach(n=>n.classList.remove('act'));
+  const pg=document.getElementById('pg-'+id);if(pg)pg.classList.add('act');
+  document.querySelectorAll('.sn-item').forEach(n=>{if(n.textContent.toLowerCase().replace(/[^a-z]/g,'').includes(id.substring(0,4)))n.classList.add('act')});
+  const titles={dash:'Dashboard',dispute:'Dispute Manager',clients:'Client Management',scores:'Score Tracker',letters:'Letter Vault',agents:'Agent Team',affiliates:'Affiliate Partners',api:'API / OpenClaw',settings:'Settings'};
+  document.getElementById('pg-title').textContent=titles[id]||id;
+  if(id==='dash')renderDash();
+  if(id==='dispute')initDispute();
+  if(id==='clients')renderClients();
+  if(id==='scores')initScores();
+  if(id==='letters')renderLetters();
+  if(id==='agents')renderAgents();
+  if(id==='affiliates')renderAffiliates();
+  if(id==='api')renderAPI();
+  document.getElementById('side').classList.remove('open');
+}
+
+// ── DASHBOARD ──
+function renderDash(){
+  const totalItems=DB.clients.reduce((s,c)=>s+c.items.length,0);
+  const totalDel=DB.clients.reduce((s,c)=>s+c.results.filter(r=>r.efxStatus==='Deleted'||r.xpnStatus==='Deleted'||r.tuStatus==='Deleted').length,0);
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="sc c1"><div class="sc-label">Active Clients</div><div class="sc-val">${DB.clients.length}</div><div class="sc-sub up">+1 this month</div></div>
+    <div class="sc c2"><div class="sc-label">Dispute Items</div><div class="sc-val">${totalItems}</div><div class="sc-sub up">${totalItems} tracked</div></div>
+    <div class="sc c3"><div class="sc-label">Items Deleted</div><div class="sc-val">${totalDel}</div><div class="sc-sub up">across all clients</div></div>
+    <div class="sc c4"><div class="sc-label">Overdue Letters</div><div class="sc-val">${DB.clients.reduce((s,c)=>s+c.tracking.filter(t=>t.overdue).length,0)}</div><div class="sc-sub dn">need follow-up</div></div>
+    <div class="sc c5"><div class="sc-label">Revenue (MTD)</div><div class="sc-val">$4,350</div><div class="sc-sub up">+22%</div></div>`;
+  // pipeline
+  const stages={intake:0,audit:0,dispute:0,response:0,resolved:0};
+  DB.clients.forEach(c=>stages[c.stage]=(stages[c.stage]||0)+1);
+  document.getElementById('dash-pipeline').innerHTML=`<div style="display:flex;gap:.4rem;flex-wrap:wrap">${Object.entries(stages).map(([k,v])=>`<div style="flex:1;min-width:100px;padding:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer" onclick="nav('clients')"><div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">${k}</div><div style="font-size:1.1rem;font-weight:700;font-family:'Playfair Display',serif">${v}</div></div>`).join('')}</div>`;
+  // agents mini
+  document.getElementById('dash-agents').innerHTML=DB.agents.map(a=>`<div style="display:flex;align-items:center;gap:.4rem;padding:.2rem 0;font-size:.68rem"><span class="api-dot ${a.status==='online'?'on':a.status==='busy'?'trying':'off'}"></span>${a.name}<span style="margin-left:auto;color:var(--muted);font-size:.55rem">${a.tasks} tasks</span></div>`).join('');
+  // feed
+  document.getElementById('dash-feed').innerHTML=[
+    {c:'var(--green)',t:'<strong>MUNCPL CR UN</strong> deleted from Equifax for Richard Bobb',ts:'Recent'},
+    {c:'var(--red)',t:'<strong>6 letters overdue</strong> for Richard Bobb — 35 days past due',ts:'Action needed'},
+    {c:'var(--cyan)',t:'<strong>Dispute Bot</strong> generated Round 2 letters for Richard Bobb',ts:'5/6/2025'},
+    {c:'var(--gold)',t:'New client <strong>Marcus Johnson</strong> intake complete',ts:'2/15/2026'},
+    {c:'var(--purple)',t:'<strong>Score Monitor</strong> detected +38 pts for Keisha Williams',ts:'3/20/2026'}
+  ].map(f=>`<div class="feed"><div class="feed-dot" style="background:${f.c}"></div><div><div class="feed-t">${f.t}</div><div class="feed-ts">${f.ts}</div></div></div>`).join('');
+}
+
+// ── DISPUTE MANAGER ──
+function initDispute(){
+  const sel=document.getElementById('dm-client-sel');
+  sel.innerHTML=DB.clients.map(c=>`<option value="${c.id}">${c.name} (${c.email})</option>`).join('');
+  loadDisputeClient(DB.clients[0].id);
+}
+function loadDisputeClient(id){
+  curClient=DB.clients.find(c=>c.id==id);
+  if(!curClient)return;
+  document.getElementById('dm-client-name').textContent=curClient.name;
+  document.getElementById('dm-client-email').textContent=curClient.email;
+  renderItems();renderTracking();renderResults();
+  // populate furnisher selects
+  const furns=curClient.items.map(i=>i.furnisher);
+  ['bur-furnisher','cred-furn','coll-furn','resp-furn','res-furn'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML=furns.map(f=>`<option>${f}</option>`).join('');
+  });
+}
+function dmTab(tab,el){
+  document.querySelectorAll('.dm-pane').forEach(p=>p.style.display='none');
+  document.querySelectorAll('#dm-tabs .tb').forEach(t=>t.classList.remove('act'));
+  document.getElementById('dmp-'+tab).style.display='block';
+  if(el)el.classList.add('act');
+  dmTabIdx=DM_TABS.indexOf(tab);
+}
+function dmTabPrev(){if(dmTabIdx>0){dmTabIdx--;const t=DM_TABS[dmTabIdx];dmTab(t,document.querySelectorAll('#dm-tabs .tb')[dmTabIdx])}}
+function dmTabNext(){if(dmTabIdx<DM_TABS.length-1){dmTabIdx++;const t=DM_TABS[dmTabIdx];dmTab(t,document.querySelectorAll('#dm-tabs .tb')[dmTabIdx])}}
+
+// ITEMS
+function renderItems(){
+  if(!curClient)return;
+  const tb=document.getElementById('items-tbody');
+  tb.innerHTML=curClient.items.map(i=>`<tr>
+    <td><input type="checkbox" class="item-chk" data-id="${i.id}"></td>
+    <td><strong>${i.furnisher}</strong></td><td>${i.acct}</td><td>${i.type}</td><td>${i.bal}</td>
+    <td>${i.efx?'<span class="bureau-tag efx">✓</span>':''}</td>
+    <td>${i.xpn?'<span class="bureau-tag xpn">✓</span>':''}</td>
+    <td>${i.tu?'<span class="bureau-tag tu">✓</span>':''}</td>
+    <td>${i.inDispute?'<span class="badge b-dispute">In-Dispute</span>':''}</td>
+    <td><button class="btn btn-sm btn-gh" onclick="editItem(${i.id})">✏</button> <button class="btn btn-sm btn-rd" onclick="removeItem(${i.id})">🗑</button></td>
+  </tr>`).join('');
+  document.getElementById('item-count').textContent='Total Accounts: '+curClient.items.length;
+}
+function addItem(){
+  if(!curClient)return;
+  const f=document.getElementById('ai-furnisher').value;if(!f){toast('err','Furnisher required');return}
+  curClient.items.push({id:Date.now(),furnisher:f,acct:document.getElementById('ai-acctnum').value||'N/A',type:document.getElementById('ai-type').value,bal:document.getElementById('ai-balance').value||'$0.00',efx:document.getElementById('ai-efx').checked,xpn:document.getElementById('ai-xpn').checked,tu:document.getElementById('ai-tu').checked,inDispute:true});
+  document.getElementById('ai-furnisher').value='';document.getElementById('ai-acctnum').value='';document.getElementById('ai-balance').value='';
+  renderItems();toast('ok','Account added');
+}
+function removeItem(id){if(!curClient)return;curClient.items=curClient.items.filter(i=>i.id!==id);renderItems();toast('ok','Item removed')}
+function deleteSelected(){if(!curClient)return;const ids=[...document.querySelectorAll('.item-chk:checked')].map(c=>parseInt(c.dataset.id));curClient.items=curClient.items.filter(i=>!ids.includes(i.id));renderItems();toast('ok',ids.length+' items deleted')}
+function initiateDispute(){toast('ok','Dispute initiated — letters generated in Tracking tab');dmTab('tracking',document.querySelectorAll('#dm-tabs .tb')[6])}
+function addBureauDispute(){toast('ok','Bureau dispute added')}
+
+// TRACKING
+function renderTracking(){
+  if(!curClient)return;
+  document.getElementById('tracking-tbody').innerHTML=curClient.tracking.length?curClient.tracking.map(t=>`<tr class="${t.overdue?'row-overdue':''}">
+    <td><input type="checkbox"></td><td style="font-size:.65rem">${t.sent}</td><td>${t.days}</td>
+    <td style="font-size:.65rem;${t.overdue?'color:var(--red);font-weight:700':''}"><span style="display:inline-block;width:14px;height:14px;background:${t.overdue?'var(--red)':'var(--green)'};border-radius:3px;vertical-align:middle;margin-right:4px"></span>${t.due}</td>
+    <td style="font-size:.62rem">${t.org}</td><td>${t.campaign}</td><td>${t.letter}</td><td style="font-size:.62rem">${t.sentTo}</td>
+  </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:1.5rem">No tracking data yet</td></tr>';
+}
+
+// RESULTS
+function renderResults(){
+  if(!curClient)return;
+  document.getElementById('results-tbody').innerHTML=curClient.results.length?curClient.results.map(r=>`<tr>
+    <td><input type="checkbox"></td><td>${r.date}</td><td>${r.title}</td><td>${r.acct}</td><td>${r.type}</td><td>${r.bal}</td>
+    <td>${r.efx?'<span class="bureau-tag efx">✓</span>':''}</td><td>${r.xpn?'<span class="bureau-tag xpn">✓</span>':''}</td><td>${r.tu?'<span class="bureau-tag tu">✓</span>':''}</td>
+    <td><span class="badge ${r.efxStatus==='Deleted'?'b-deleted':'b-dispute'}">${r.efxStatus}</span></td>
+    <td><span class="badge ${r.xpnStatus==='Deleted'?'b-deleted':'b-dispute'}">${r.xpnStatus}</span></td>
+    <td><span class="badge ${r.tuStatus==='Deleted'?'b-deleted':'b-dispute'}">${r.tuStatus}</span></td>
+  </tr>`).join(''):'<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:1.5rem">No results yet</td></tr>';
+}
+
+// ── CLIENTS ──
+function renderClients(q=''){
+  const f=q?DB.clients.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())):DB.clients;
+  document.getElementById('cli-tbody').innerHTML=f.map(c=>{
+    const ls=c.scores[c.scores.length-1]||{eq:0,ex:0,tu:0};
+    const fs=c.scores[0]||{eq:0,ex:0,tu:0};
+    const avg=Math.round(((ls.eq-fs.eq)+(ls.ex-fs.ex)+(ls.tu-fs.tu))/3);
+    return`<tr><td><strong>${c.name}</strong></td><td style="color:var(--muted);font-size:.68rem">${c.email}</td><td><span class="badge b-${c.stage==='dispute'?'dispute':c.stage==='resolved'?'active':'pending'}">${c.stage}</span></td><td>${c.items.length}</td><td style="color:var(--green)">+${avg}</td><td style="color:var(--muted)">${c.joined}</td><td><button class="btn btn-sm btn-cy" onclick="nav('dispute');loadDisputeClient(${c.id})">Open in DM</button></td></tr>`}).join('');
+}
+
+// ── SCORES ──
+function initScores(){document.getElementById('sc-sel').innerHTML='<option value="">Select client</option>'+DB.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+function loadScores(id){
+  if(!id){document.getElementById('sc-display').style.display='none';return}
+  const c=DB.clients.find(x=>x.id==id);document.getElementById('sc-display').style.display='block';
+  const ls=c.scores[c.scores.length-1],fs=c.scores[0];
+  function rc(s){return s<580?'poor':s<670?'fair':s<740?'good':'great'}
+  document.getElementById('sc-rings').innerHTML=['eq','ex','tu'].map((b,i)=>{const v=[ls.eq,ls.ex,ls.tu][i];const d=v-[fs.eq,fs.ex,fs.tu][i];const nm=['Equifax','Experian','TransUnion'][i];return`<div class="sc c${i+1}" style="text-align:center"><div class="sc-label">${nm}</div><div style="display:flex;justify-content:center;margin:.4rem 0"><div class="ring ${rc(v)}"><div class="ring-inner"><span>${v}</span><small>${b.toUpperCase()}</small></div></div></div><div class="sc-sub up">+${d} pts</div></div>`}).join('');
+  document.getElementById('sc-tbody').innerHTML=c.scores.map(s=>`<tr><td>${s.date}</td><td>${s.eq}</td><td>${s.ex}</td><td>${s.tu}</td><td style="color:var(--muted);font-size:.68rem">${s.note}</td></tr>`).join('');
+}
+
+// ── LETTERS ──
+function renderLetters(){
+  document.getElementById('ltr-content').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">${Object.entries(DB.letters).map(([k,l])=>`<div class="panel"><div class="panel-h"><span class="panel-t">${l.name}</span></div><div class="panel-b"><pre style="font-size:.68rem;color:var(--muted);white-space:pre-wrap;line-height:1.6;max-height:200px;overflow-y:auto">${l.body}</pre><div style="margin-top:.5rem;display:flex;gap:.3rem"><button class="btn btn-cy btn-sm" onclick="navigator.clipboard.writeText(\`${l.body.replace(/`/g,"'")}\`).then(()=>toast('ok','Copied'))">Copy</button><button class="btn btn-gh btn-sm" onclick="window.print()">Print</button></div></div></div>`).join('')}</div>`;
+}
+
+// ── AGENTS ──
+function renderAgents(){
+  document.getElementById('ag-grid').innerHTML=DB.agents.map(a=>`<div class="ag-card"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem"><div style="width:32px;height:32px;border-radius:50%;background:${a.color};display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#fff">${a.name.split(' ').map(w=>w[0]).join('')}</div><div><div style="font-size:.78rem;font-weight:600">${a.name}</div><div style="font-size:.58rem;color:var(--muted)">${a.role}</div></div></div><p style="font-size:.65rem;color:var(--muted);margin:.3rem 0">${a.desc}</p><div style="display:flex;gap:.5rem;font-size:.58rem;color:var(--muted)"><span>Tasks: <strong style="color:var(--text)">${a.tasks}</strong></span><span>Accuracy: <strong style="color:var(--text)">${a.acc}</strong></span></div><div style="display:flex;align-items:center;gap:.3rem;font-size:.58rem;margin-top:.3rem"><span class="api-dot ${a.status==='online'?'on':a.status==='busy'?'trying':'off'}"></span>${a.status} ${a.type==='ai'?'(AI)':'(Human)'}</div></div>`).join('');
+  document.getElementById('ag-log').innerHTML=[
+    {a:'CredX AI',t:'Analyzed Richard Bobb — 10 disputeable items identified',ts:'Recent',c:'var(--cyan)'},
+    {a:'Dispute Bot',t:'Generated 6 Consumer Law letters (Round 2) for Richard Bobb',ts:'5/6/2025',c:'var(--green)'},
+    {a:'Score Monitor',t:'MUNCPL CR UN deleted from EFX for Richard Bobb',ts:'6/11/2025',c:'var(--purple)'},
+    {a:'Revenue Agent',t:'Monthly billing cycle processed',ts:'Yesterday',c:'var(--red)'},
+    {a:'Cesar',t:'OFFLINE — pending Zero Claw backend deployment',ts:'—',c:'var(--muted)'}
+  ].map(e=>`<div class="feed"><div class="feed-dot" style="background:${e.c}"></div><div><div class="feed-t"><strong>${e.a}</strong> — ${e.t}</div><div class="feed-ts">${e.ts}</div></div></div>`).join('');
+}
+
+// ── AFFILIATES ──
+function renderAffiliates(){document.getElementById('aff-tbody').innerHTML=DB.affiliates.map(a=>`<tr><td><strong>${a.name}</strong></td><td><span class="badge b-sent">${a.cat}</span></td><td style="color:var(--gold)">${a.comm}</td><td>${a.clicks}</td><td>${a.conv}</td><td><a href="${a.url}" target="_blank" style="color:var(--cyan);font-size:.65rem">Visit ↗</a></td></tr>`).join('')}
+
+// ── API / OPENCLAW ──
+function renderAPI(){
+  const endpoints=[
+    {method:'GET',path:'/clients',desc:'List all clients'},
+    {method:'POST',path:'/clients',desc:'Add new client'},
+    {method:'GET',path:'/clients/:id/disputes',desc:'Get client disputes'},
+    {method:'POST',path:'/disputes',desc:'Create dispute'},
+    {method:'PUT',path:'/disputes/:id/status',desc:'Update dispute status'},
+    {method:'POST',path:'/letters/generate',desc:'Generate dispute letter'},
+    {method:'GET',path:'/tracking',desc:'Get letter tracking'},
+    {method:'POST',path:'/results',desc:'Record deletion result'},
+    {method:'GET',path:'/scores/:clientId',desc:'Get score history'},
+    {method:'POST',path:'/agents/dispatch',desc:'Dispatch agent task'},
+    {method:'GET',path:'/agents/status',desc:'Get agent status'},
+    {method:'POST',path:'/import/credit-report',desc:'Import credit report'}
+  ];
+  document.getElementById('api-endpoints').innerHTML=endpoints.map(e=>`<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;background:var(--surface);border-radius:6px"><span class="badge ${e.method==='GET'?'b-active':e.method==='POST'?'b-sent':'b-dispute'}" style="min-width:40px;text-align:center">${e.method}</span><code style="font-size:.68rem;color:var(--cyan)">${e.path}</code><span style="font-size:.62rem;color:var(--muted);margin-left:auto">${e.desc}</span></div>`).join('');
+}
+function testAPI(){
+  const url=document.getElementById('api-url').value;
+  const res=document.getElementById('api-result');
+  res.innerHTML=`<div style="font-size:.72rem;color:var(--orange)"><span class="api-dot trying"></span> Testing connection to ${url}...</div>`;
+  // Simulate — network is disabled in this environment
+  setTimeout(()=>{
+    res.innerHTML=`<div style="font-size:.72rem;color:var(--red)"><span class="api-dot off"></span> Connection failed — network egress is disabled in this environment. To connect:<br><br>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.6rem;margin-top:.4rem;font-size:.65rem;line-height:1.6">
+    <strong>On your VPS (credx server):</strong><br>
+    1. SSH into your server: <code style="color:var(--cyan)">ssh root@your-server-ip</code><br>
+    2. Navigate to OpenClaw: <code style="color:var(--cyan)">cd /root/openclaw</code><br>
+    3. Create a CredX API service: <code style="color:var(--cyan)">cp .env.example .env && nano .env</code><br>
+    4. Set <code style="color:var(--cyan)">CREDX_API_KEY=your-key</code><br>
+    5. Start with Docker: <code style="color:var(--cyan)">docker-compose up -d</code><br>
+    6. Verify: <code style="color:var(--cyan)">curl http://localhost:8080/health</code><br><br>
+    Then update the API URL above to <code style="color:var(--cyan)">https://credxme.com/api</code> or your server IP.
+    </div></div>`;
+  },2000);
+}
+
+// ── MODALS ──
+function openModal(type){
+  const m=document.getElementById('modal-c');
+  if(type==='add-client'){
+    m.innerHTML=`<button class="modal-x" onclick="closeModal()">×</button><div style="font-size:1rem;font-weight:700;font-family:'Playfair Display',serif;margin-bottom:.8rem">New Client Intake</div>
+    <div class="form-row" style="flex-direction:column"><div class="fg"><label>Full Name</label><input id="nc-name"></div><div class="fg"><label>Email</label><input id="nc-email"></div><div class="fg"><label>Phone</label><input id="nc-phone"></div><div class="fg"><label>Credit Range</label><select id="nc-range"><option>Under 500</option><option>500-579</option><option>580-669</option><option>670-739</option><option>740+</option></select></div></div>
+    <button class="btn btn-cy" style="width:100%;justify-content:center;margin-top:.5rem" onclick="doAddClient()">Add Client</button>`;
+  } else if(type==='add-agent'){
+    m.innerHTML=`<button class="modal-x" onclick="closeModal()">×</button><div style="font-size:1rem;font-weight:700;font-family:'Playfair Display',serif;margin-bottom:.8rem">Add Agent</div>
+    <div class="form-row" style="flex-direction:column"><div class="fg"><label>Name</label><input id="aa-name"></div><div class="fg"><label>Role</label><input id="aa-role"></div><div class="fg"><label>Type</label><select id="aa-type"><option value="ai">AI</option><option value="human">Human</option></select></div><div class="fg"><label>Description</label><textarea id="aa-desc"></textarea></div></div>
+    <button class="btn btn-cy" style="width:100%;justify-content:center;margin-top:.5rem" onclick="doAddAgent()">Add Agent</button>`;
+  }
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeModal(){document.getElementById('modal-bg').classList.remove('show')}
+function doAddClient(){
+  const n=document.getElementById('nc-name').value;if(!n){toast('err','Name required');return}
+  const r=document.getElementById('nc-range').value;const bs=r==='Under 500'?480:r==='500-579'?540:r==='580-669'?620:r==='670-739'?700:750;
+  DB.clients.push({id:Date.now(),name:n,email:document.getElementById('nc-email').value,stage:'intake',items:[],tracking:[],results:[],scores:[{date:new Date().toISOString().split('T')[0],eq:bs,ex:bs-12,tu:bs+5,note:'Initial intake'}],joined:new Date().toISOString().split('T')[0]});
+  toast('ok',n+' added');closeModal();updateBadges();
+}
+function doAddAgent(){
+  const n=document.getElementById('aa-name').value;if(!n){toast('err','Name required');return}
+  const colors=['#22d3ee','#f5a623','#10b981','#a78bfa','#f97316','#ef4444','#ec4899'];
+  DB.agents.push({id:Date.now(),name:n,role:document.getElementById('aa-role').value,type:document.getElementById('aa-type').value,status:'online',color:colors[DB.agents.length%7],tasks:0,acc:'—',desc:document.getElementById('aa-desc').value});
+  toast('ok',n+' added to team');closeModal();renderAgents();
+}
+
+// ── UTILS ──
+function toast(type,msg){const c=document.getElementById('toast-box');const t=document.createElement('div');t.className='toast '+type;t.innerHTML=`<span>${type==='ok'?'✓':type==='err'?'✗':'ℹ'}</span>${msg}`;c.appendChild(t);setTimeout(()=>t.remove(),3500)}
+function updateBadges(){document.getElementById('b-cli').textContent=DB.clients.length;document.getElementById('b-disp').textContent=DB.clients.reduce((s,c)=>s+c.items.length,0)}
+
+// INIT
+document.addEventListener('DOMContentLoaded',()=>{renderDash();updateBadges()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+</script>
+</body>
+</html>
